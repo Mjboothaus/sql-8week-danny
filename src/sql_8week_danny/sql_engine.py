@@ -8,9 +8,7 @@ from loguru import logger
 LOG_FILE = "duckdb_db.log"
 
 logger.remove()  # Turn off console logging
-logger.add(
-    LOG_FILE, format="{time:ddd d MMM YYYY - HH:mm:ss} {level} {message}", rotation="1 MB"
-)
+logger.add(LOG_FILE, format="{time:ddd d MMM YYYY - HH:mm:ss} {level} {message}", rotation="1 MB")
 
 
 class DuckDBEngine:
@@ -33,7 +31,6 @@ class DuckDBEngine:
         else:
             logger.info("In-memory DuckDB")
             self.connection = duckdb.connect(read_only=False)
-
 
     def get_connection(self):
         return self.connection
@@ -60,7 +57,7 @@ class DuckDBEngine:
             result = self.connection.execute("SHOW TABLES;")
             self.table_names = [row[0] for row in result.fetchall()]
         except Exception as e:
-            print(f"Error fetching table names: {e}")       
+            print(f"Error fetching table names: {e}")
 
     def query(self, sql, force_dataframe=False):
         """
@@ -113,7 +110,7 @@ class DuckDBEngine:
         for table in sorted(self.table_names):
             df[table] = self.query(f"SELECT * FROM {table}")
             if notebook:
-                display(Markdown(f"# {table}: {len(df)} records"))
+                display(Markdown(f"# {table}: {len(df[table])} records"))
             else:
                 print(f"**{table}**: {len(df)} records")
             if notebook and display_tables:
@@ -133,4 +130,3 @@ if __name__ == "__main__":
     db.display_all_table_info(notebook=False)
 
     print(f"Members count: {db.query('SELECT COUNT(*) FROM members')}")
-
