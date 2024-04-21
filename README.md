@@ -1,5 +1,13 @@
 # sql-8week-danny
 
+This repo builds upon the 8 week SQL course created by Danny Ma (datawithdanny.com).
+
+There a series of Jupyter notebooks, one for eack week's case study.
+
+Also can run SQL in the browser either:
+- DuckDB WASM
+- Streamlit web app (http://localhost:8501)
+
 ## Week 1
 
 https://8weeksqlchallenge.com/case-study-1/

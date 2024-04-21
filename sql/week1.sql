@@ -1,8 +1,8 @@
-CREATE SCHEMA dannys_diner;
+CREATE SCHEMA IF NOT EXISTS dannys_diner;
 
 SET search_path = dannys_diner;
 
-CREATE TABLE sales (
+CREATE OR REPLACE TABLE sales (
     "customer_id" VARCHAR(1), "order_date" DATE, "product_id" INTEGER
 );
 
@@ -26,7 +26,7 @@ VALUES ('A', '2021-01-01', '1'),
     ('C', '2021-01-01', '3'),
     ('C', '2021-01-07', '3');
 
-CREATE TABLE menu (
+CREATE OR REPLACE TABLE menu (
     "product_id" INTEGER, "product_name" VARCHAR(5), "price" INTEGER
 );
 
@@ -38,7 +38,7 @@ VALUES ('1', 'sushi', '10'),
     ('2', 'curry', '15'),
     ('3', 'ramen', '12');
 
-CREATE TABLE members (
+CREATE OR REPLACE TABLE members (
     "customer_id" VARCHAR(1), "join_date" DATE
 );
 

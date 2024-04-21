@@ -1,6 +1,7 @@
 # Extras
 
 data/
+notebooks/week*_files/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
