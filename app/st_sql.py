@@ -21,9 +21,8 @@ else:
 limit = st.sidebar.number_input("Limit rows:", min_value=1, value=10, step=1)
 
 
-
 # Maintain a session-level query history
-if 'query_history' not in st.session_state:
+if "query_history" not in st.session_state:
     st.session_state.query_history = []
 
 # Execute query and display results
