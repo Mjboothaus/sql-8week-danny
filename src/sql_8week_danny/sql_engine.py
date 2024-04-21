@@ -1,6 +1,12 @@
 import duckdb
 from pathlib import Path
 from loguru import logger
+import sys
+
+logger.remove()
+logger.add("duckdb_engine.log", format="{time:ddd d MMM YYYY - HH:mm:ss} {level} {message}", rotation="1 MB")
+
+
 
 class DuckDBEngine:
     def __init__(self, db_path=None, rm_db=False):
@@ -11,12 +17,12 @@ class DuckDBEngine:
         """
         if db_path:
             if rm_db and Path(db_path).exists():
-                logger.info(f"Removing existing {db_path}\n")
+                logger.info(f"Removing existing {db_path}")
                 Path(db_path).unlink()
             logger.info(f"Persisting {db_path}\n")
             self.connection = duckdb.connect(database=db_path)
         else:
-            logger.info("In-memory DuckDB\n")
+            logger.info("In-memory DuckDB")
             self.connection = duckdb.connect(read_only=False)
 
     def execute_sql_file(self, file_path):
