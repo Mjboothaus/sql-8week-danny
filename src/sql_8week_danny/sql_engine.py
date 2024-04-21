@@ -20,6 +20,7 @@ class DuckDBEngine:
         :param db_path: Path to the DuckDB database file. If None, an in-memory database is used.
         :param rm_db: Bool - remove db_path if it exists (default False)
         """
+        self.table_names = []
         if db_path:
             if rm_db and Path(db_path).exists():
                 logger.info(f"Removing existing {db_path}")
@@ -32,12 +33,12 @@ class DuckDBEngine:
         else:
             logger.info("In-memory DuckDB")
             self.connection = duckdb.connect(read_only=False)
-        self.table_names = None
+
 
     def get_connection(self):
         return self.connection
 
-    def execute_sql_file(self, file_path, is_create=False):
+    def execute_sql_file(self, file_path):
         """
         Load SQL commands from a file and execute them.
         :param file_path: Path to the .sql file containing SQL commands.
@@ -45,14 +46,21 @@ class DuckDBEngine:
         try:
             sql_commands = Path(file_path).read_text()
             self.connection.execute(sql_commands)
-            if is_create:
-                self.table_names = self.query("SHOW TABLES;", force_dataframe=True)["name"].tolist()
+            self.refresh_table_names()
             return sql_commands
         except Exception as e:
             logger.error(f"Error executing SQL file {file_path}: {e}")
             return None
 
-       
+    def refresh_table_names(self):
+        """
+        Refresh the list of table names from the database.
+        """
+        try:
+            result = self.connection.execute("SHOW TABLES;")
+            self.table_names = [row[0] for row in result.fetchall()]
+        except Exception as e:
+            print(f"Error fetching table names: {e}")       
 
     def query(self, sql, force_dataframe=False):
         """
@@ -87,6 +95,9 @@ class DuckDBEngine:
         Load all tables in the database into a dictionary of pandas DataFrames.
         :return: A tuple containing a list of table names and a dictionary with table names as keys and DataFrames as values.
         """
+        if not self.table_names:
+            print("No tables found. Ensure the SQL create file has been loaded.")
+            return {}
         tables_df = dict()
         try:
             for table in self.table_names:
@@ -94,15 +105,18 @@ class DuckDBEngine:
             logger.info(f"Loaded {self.table_names} to dataframes")
             return tables_df
         except Exception as e:
-            print(f"Error loading tables to DataFrame: {e}")
-            return [], {}
+            print(f"Error loading tables to DataFrames: {e}")
+            return {}
 
-    def display_all_table_info(self, display_tables=False):
+    def display_all_table_info(self, display_tables=False, notebook=True):
         df = dict()
         for table in sorted(self.table_names):
             df[table] = self.query(f"SELECT * FROM {table}")
-            display(Markdown(f"**{table}**: {len(df)} records"))
-            if display_tables:
+            if notebook:
+                display(Markdown(f"# {table}: {len(df)} records"))
+            else:
+                print(f"**{table}**: {len(df)} records")
+            if notebook and display_tables:
                 display(df[table])
         return df
 
@@ -111,12 +125,12 @@ class DuckDBEngine:
 
 
 if __name__ == "__main__":
-    DEMO_SQL = Path.cwd().parent / "sql/week1.sql"
+    DEMO_SQL = Path.cwd() / "sql/week1.sql"
 
     db = DuckDBEngine()
-    db.execute_sql_file(DEMO_SQL, is_create=True)
-    db.load_tables_to_df()
-    db.display_all_table_info()
+    db.execute_sql_file(DEMO_SQL)
+    df = db.load_tables_to_df()
+    db.display_all_table_info(notebook=False)
 
     print(f"Members count: {db.query('SELECT COUNT(*) FROM members')}")
 
