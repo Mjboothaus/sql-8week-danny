@@ -5,7 +5,7 @@
 groups = ["default", "lint"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:465fb0df30db4f181d6a84c4f2508ef1f8cd859637d53e8a12d190d9b2226ebb"
+content_hash = "sha256:c878c219f2457b822105f80623addf4353bc65cc932d319d4dfcb03083429800"
 
 [[package]]
 name = "altair"
@@ -1690,6 +1690,17 @@ groups = ["default"]
 files = [
     {file = "soupsieve-2.5-py3-none-any.whl", hash = "sha256:eaa337ff55a1579b6549dc679565eac1e3d000563bcb1c8ab0d0fefbc0c2cdc7"},
     {file = "soupsieve-2.5.tar.gz", hash = "sha256:5663d5a7b3bfaeee0bc4372e7fc48f9cff4940b3eec54a6451cc5299f1097690"},
+]
+
+[[package]]
+name = "sqlglot"
+version = "23.11.2"
+requires_python = ">=3.7"
+summary = "An easily customizable SQL parser and transpiler"
+groups = ["default"]
+files = [
+    {file = "sqlglot-23.11.2-py3-none-any.whl", hash = "sha256:816d045304c3bd2a3ac907953e3540a4aa8f3fb19c124bd56be0c3010ae3851f"},
+    {file = "sqlglot-23.11.2.tar.gz", hash = "sha256:abb31d2924f615f95e5ff2e597e3fd2cc909e8d259b75a1d9bce6c1750649a37"},
 ]
 
 [[package]]

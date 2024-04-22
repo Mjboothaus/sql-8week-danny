@@ -1,0 +1,9 @@
+[app]
+title = "Data with Danny - Week 1"
+prompt_name = "User"
+response_name = "Result"
+tabs = ["Query", "SQL", "Scehma"]
+
+[sql]
+create_sql = "sql/week1.sql"
+disallowed_keywords = ["ALTER", "CALL", "DELETE", "DROP", "EXEC", "GRANT", "INSERT", "UPDATE"]
