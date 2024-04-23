@@ -28,6 +28,9 @@ distribution = true
 lint = [
     "black[jupyter]>=24.4.0",
 ]
+tools = [
+    "pre-commit>=3.7.0",
+]
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
