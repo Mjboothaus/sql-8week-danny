@@ -7,8 +7,12 @@ from loguru import logger
 
 LOG_FILE = "duckdb_db.log"
 
-#logger.remove()  # Turn off console logging
-logger.add(LOG_FILE, format="{time:ddd d MMM YYYY - HH:mm:ss} {level} {message}", rotation="1 MB")
+# logger.remove()  # Turn off console logging
+logger.add(
+    LOG_FILE,
+    format="{time:ddd d MMM YYYY - HH:mm:ss} {level} {message}",
+    rotation="1 MB",
+)
 
 
 class DuckDBEngine:
@@ -70,7 +74,9 @@ class DuckDBEngine:
                 raise ValueError("Only one statement is allowed")
             disallowed_keywords = self.config["disallowed_keywords"]
             for expression in expressions:
-                if any(token in expression.sql().upper() for token in disallowed_keywords):
+                if any(
+                    token in expression.sql().upper() for token in disallowed_keywords
+                ):
                     raise ValueError("Disallowed SQL keywords detected")
             return True, "Query is valid"
         except Exception as e:

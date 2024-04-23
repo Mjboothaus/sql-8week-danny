@@ -3,11 +3,9 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-from pandas import Timestamp
 from sql_8week_danny.sql_engine import DuckDBEngine
 
 import tomllib
-from pathlib import Path
 from loguru import logger
 
 
@@ -60,14 +58,17 @@ def convert_chat_hist_to_serial(chat_hist):
         for key, value in entry.items():
             if isinstance(value, pd.DataFrame):
                 # Convert DataFrame to a list of records (dictionaries)
-                value = value.map(lambda x: x.isoformat() if isinstance(x, pd.Timestamp) else x).to_dict(
-                    "records"
-                )
+                value = value.map(
+                    lambda x: x.isoformat() if isinstance(x, pd.Timestamp) else x
+                ).to_dict("records")
             # Now handle the case where value is a list (of dictionaries, potentially with Timestamps)
             if isinstance(value, list):
                 # Ensure each dictionary in the list handles Timestamps
                 value = [
-                    {k: v.isoformat() if isinstance(v, pd.Timestamp) else v for k, v in record.items()}
+                    {
+                        k: v.isoformat() if isinstance(v, pd.Timestamp) else v
+                        for k, v in record.items()
+                    }
                     for record in value
                 ]
             serial_entry[key] = value
