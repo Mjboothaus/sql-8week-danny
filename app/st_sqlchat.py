@@ -39,7 +39,7 @@ def handle_query(db, query):
         else:
             return "No results returned."
     else:
-        return validate[1]
+        return f"ERROR: {validate[1]}"
 
 
 def add_response_to_chat_hist(response):
@@ -115,6 +115,8 @@ if "chat_hist" not in st.session_state:
 st.sidebar.markdown(f"## {config['app']['title']}")
 
 
+error_sidebar = st.sidebar.container()
+
 user_query = st.chat_input("Enter your SQL query:", key="chat_input")
 
 # TODO: Validate/check the query (prob in handle_response)
@@ -123,9 +125,13 @@ user_query = st.chat_input("Enter your SQL query:", key="chat_input")
 if user_query:
     if db.validate(user_query)[0]:
         user_query = db._check_and_validate_sql(user_query)
-    st.session_state.chat_hist.append({config["app"]["prompt_name"]: user_query})
+
     response = handle_query(db, user_query)
-    add_response_to_chat_hist(response)
+    if isinstance(response, pd.DataFrame):
+        st.session_state.chat_hist.append({config["app"]["prompt_name"]: user_query})
+        add_response_to_chat_hist(response)
+    else:
+        error_sidebar.error(response)
 
 for chat in st.session_state.chat_hist:
     if config["app"]["prompt_name"] in chat:
