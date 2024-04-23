@@ -1,5 +1,6 @@
 # Extras
 
+.vscode/
 data/
 notebooks/week*_files/
 
