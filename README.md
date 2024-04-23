@@ -45,4 +45,3 @@ https://8weeksqlchallenge.com/case-study-8/
 ## DuckDB / SQL
 
 https://duckdb.org
-

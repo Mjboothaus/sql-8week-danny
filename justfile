@@ -5,5 +5,8 @@ default:
 duck db_name="":
     harlequin --theme github-dark {{db_name}}
 
+pre-commit_update:
+    pre-commit autoupdate
 
-docker-compose pull
+pre-commit_test:
+    pre-commit run --all-files
