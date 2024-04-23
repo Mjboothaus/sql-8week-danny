@@ -94,17 +94,26 @@ def default_handler(x):
 config = read_config()
 db = setup_DuckDB(config)
 
-st.sidebar.markdown("### Tables:")
-for table in db.table_names:
-    st.sidebar.button(label=table, use_container_width=True, help=table)
-
 
 # Create UI
+
+
+st.sidebar.markdown("### Tables:")
+table_info = {}
+for table in db.table_names:
+    table_info[table] = db.get_table_info(table)
+    st.sidebar.button(
+        label=table,
+        use_container_width=True,
+        help=f"Table: {table_info[table].name} - {table_info[table].row_count} rows\n {table_info[table].description}",
+    )
+
 
 if "chat_hist" not in st.session_state:
     st.session_state.chat_hist = []
 
 st.sidebar.markdown(f"## {config['app']['title']}")
+
 
 user_query = st.chat_input("Enter your SQL query:", key="chat_input")
 
@@ -112,6 +121,8 @@ user_query = st.chat_input("Enter your SQL query:", key="chat_input")
 
 
 if user_query:
+    if db.validate(user_query)[0]:
+        user_query = db._check_and_validate_sql(user_query)
     st.session_state.chat_hist.append({config["app"]["prompt_name"]: user_query})
     response = handle_query(db, user_query)
     add_response_to_chat_hist(response)

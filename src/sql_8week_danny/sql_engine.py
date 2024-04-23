@@ -1,13 +1,44 @@
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import List, Optional
 
 import duckdb
 import sqlglot
 from IPython.display import Markdown, display
 from loguru import logger
 
+
+@dataclass
+class TableColumn:
+    name: str
+    data_type: str
+    is_nullable: bool
+    default: Optional[str] = None
+    constraints: Optional[str] = None
+
+
+@dataclass
+class TableIndex:
+    name: str
+    columns: List[str]
+
+
+@dataclass
+class TableInfo:
+    name: str
+    schema: List[TableColumn] = field(default_factory=list)
+    row_count: Optional[int] = None
+    primary_key: Optional[List[str]] = None
+    indexes: List[TableIndex] = field(default_factory=list)
+    creation_date: Optional[str] = None
+    last_modified_date: Optional[str] = None
+    tablespace: Optional[str] = None
+    description: Optional[str] = None
+
+
 LOG_FILE = "duckdb_db.log"
 
-# logger.remove()  # Turn off console logging
+# logger.remove()  # Uncomment to turn off console logging
 logger.add(
     LOG_FILE,
     format="{time:ddd d MMM YYYY - HH:mm:ss} {level} {message}",
@@ -69,7 +100,7 @@ class DuckDBEngine:
 
     def validate(self, query):
         try:
-            expressions = sqlglot.parse(query, dialect=self.dialect)
+            expressions = sqlglot.parse(query, dialect="duckdb")
             if len(expressions) > 1:
                 raise ValueError("Only one statement is allowed")
             disallowed_keywords = self.config["disallowed_keywords"]
@@ -110,6 +141,23 @@ class DuckDBEngine:
             print(f"Error executing query: {e}")
             return None
 
+    def _check_sql(self, sql):
+        try:
+            return sqlglot.transpile(sql, read="duckdb", write="duckdb")[0]
+        except sqlglot.errors.ParseError as e:
+            print(
+                f"SQL ERROR: {e.errors[0]['description']}\nQuery: '{sql[:e.errors[0]['col']]}'"
+            )
+            # print(e.errors)
+            return None
+
+    def _check_and_validate_sql(self, sql):
+        validate = self.validate(sql)
+        if validate[0]:
+            return self._check_sql(sql)
+        else:
+            return f"#### ERROR: {validate[1]}"
+
     def load_tables_to_df(self):
         """
         Load all tables in the database into a dictionary of pandas DataFrames.
@@ -139,6 +187,79 @@ class DuckDBEngine:
             if notebook and display_tables:
                 display(df[table])
         return df
+
+    def get_table_info(self, table_name: str) -> TableInfo:
+        # Execute PRAGMA show_tables_expanded and convert to DataFrame
+        result_df = self.query("PRAGMA show_tables_expanded;")
+
+        # Filter the DataFrame for the specific table
+        table_info_df = result_df[result_df["name"] == table_name].iloc[0]
+
+        # Extract schema information
+        column_names = table_info_df["column_names"]
+        column_types = table_info_df["column_types"]
+
+        schema = [
+            TableColumn(
+                name=col_name, data_type=col_type, is_nullable=True
+            )  # Assuming nullable, adjust as necessary
+            for col_name, col_type in zip(column_names, column_types)
+        ]
+
+        # For row count, execute a separate query
+        row_count = self._get_table_row_count(table_name)
+
+        # Construct and return the TableInfo instance
+        return TableInfo(
+            name=table_name,
+            schema=schema,
+            row_count=row_count,
+            # Assuming defaults for other fields, adjust as necessary
+            primary_key=None,  # You might need additional logic to determine the primary key
+            indexes=[],  # Adjust based on available index information or separate logic
+            creation_date=None,
+            last_modified_date=None,
+            tablespace=None,
+            description=self.config[table_name]["description"],  # from app.toml
+        )
+
+    def _get_table_row_count(self, table_name: str) -> int:
+        query = f"SELECT COUNT(*) FROM {table_name}"
+        result = self.connection.execute(query).fetchone()
+        return result[0] if result else 0
+
+    def _get_table_schema(self, table_name: str) -> List[TableColumn]:
+        result = self.connection.execute(
+            f"PRAGMA table_info('{table_name}')"
+        ).fetchall()
+        return [
+            TableColumn(
+                name=row[1],
+                data_type=row[2],
+                is_nullable=row[3] == 0,
+                default=row[4],
+                constraints=None,  # You might need custom logic to parse constraints
+            )
+            for row in result
+        ]
+
+    def _get_table_row_count(self, table_name: str) -> int:
+        result = self.connection.execute(
+            f"SELECT COUNT(*) FROM {table_name}"
+        ).fetchone()
+        return result[0] if result else 0
+
+    def _get_table_indexes(self, table_name: str) -> List[TableIndex]:
+        result = self.connection.execute(
+            f"PRAGMA show_indexes('{table_name}')"
+        ).fetchall()
+        indexes = []
+        for row in result:
+            index_name = row[1]
+            column_name = row[4]
+            # This simplistic approach assumes one column per index; you might need to adjust it
+            indexes.append(TableIndex(name=index_name, columns=[column_name]))
+        return indexes
 
     def close(self):
         self.connection.close()

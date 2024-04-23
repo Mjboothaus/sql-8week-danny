@@ -2,8 +2,17 @@
 title = "Data with Danny - Week 1"
 prompt_name = "User"
 response_name = "Result"
-tabs = ["Query", "SQL", "Scehma"]
+tabs = ["Query", "SQL", "Schema"]
 
 [sql]
 create_sql = "sql/week1.sql"
 disallowed_keywords = ["ALTER", "CALL", "DELETE", "DROP", "EXEC", "GRANT", "INSERT", "UPDATE"]
+
+[sql.menu]
+description = "Menu table description"
+
+[sql.members]
+description = "Members table description"
+
+[sql.sales]
+description = "Sales table description"
