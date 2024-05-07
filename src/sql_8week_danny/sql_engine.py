@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import duckdb
 import sqlglot
+import tomllib
 from IPython.display import Markdown, display
 from loguru import logger
 
@@ -46,16 +47,34 @@ logger.add(
 )
 
 
+def display_sql(sql):
+    display(Markdown(f"```\n{sql}"))
+    return None
+
+
+def read_config(config_file="app/app.toml"):
+    config_toml = Path.cwd() / config_file
+    if not config_toml.exists():
+        logger.error(f"File Not Found - {str(config_toml)}")
+        raise FileNotFoundError(f"{str(config_toml)}")
+    with open(config_toml, "rb") as f:
+        logger.info(f"Config loaded from {str(config_toml)}")
+        return tomllib.load(f)
+
+
 class DuckDBEngine:
-    def __init__(self, config=None, db_path=None, rm_db=False):
+    def __init__(self, config_file=None, db_path=None, rm_db=False):
         """
         Initialise the DuckDB db.
+        :param config_file: Path or str filename for the config toml file
         :param db_path: Path to the DuckDB database file. If None, an in-memory database is used.
         :param rm_db: Bool - remove db_path if it exists (default False)
         """
         self.table_names = []
-        if config:
+        if config_file:
+            config = read_config(config_file)
             self.config = config["sql"]
+            logger.info(f"{self.config}")
         else:
             self.config = None
         if db_path:
@@ -70,6 +89,7 @@ class DuckDBEngine:
         else:
             logger.info("In-memory DuckDB")
             self.connection = duckdb.connect(read_only=False)
+        self.last_sql = None
 
     def get_connection(self):
         return self.connection
@@ -100,17 +120,23 @@ class DuckDBEngine:
 
     def validate(self, query):
         try:
+            # logger.info(f"Query: {query}")
             expressions = sqlglot.parse(query, dialect="duckdb")
             if len(expressions) > 1:
+                logger.error(f"Only one statement is allowed: {len(expressions)}")
                 raise ValueError("Only one statement is allowed")
             disallowed_keywords = self.config["disallowed_keywords"]
             for expression in expressions:
                 if any(
                     token in expression.sql().upper() for token in disallowed_keywords
                 ):
+                    logger.error(
+                        f"Disallowed SQL keywords detected: {expression.sql().upper()}"
+                    )
                     raise ValueError("Disallowed SQL keywords detected")
             return True, "Query is valid"
         except Exception as e:
+            logger.error(f"{e}")
             return False, str(e)
 
     def query(self, sql, force_dataframe=False):
@@ -120,6 +146,7 @@ class DuckDBEngine:
         :param force_dataframe: If True, forces the result to be a pandas DataFrame.
         :return: Query results as a pandas DataFrame, a single value, or None if nothing is returned.
         """
+        logger.info(f"SQL: {sql} - DataFrame {force_dataframe}")
         try:
             result = self.connection.execute(sql)
             # Fetch the result to inspect its shape
@@ -158,6 +185,39 @@ class DuckDBEngine:
         else:
             return f"#### ERROR: {validate[1]}"
 
+    def _total_query(self, sql, force_dataframe=False, skip_validation=False):
+        """
+        Execute or validate a SQL query from a string, a .sql file path, or a Path object.
+        :param sql: SQL query string, path to a .sql file, or Path object.
+        :param force_dataframe: If True, forces the result to be a pandas DataFrame.
+        :param skip_validation: If True, skips the SQL validation step.
+        :return: Tuple (result, error) where 'result' is the query results or None, and 'error' is an error message or None.
+        """
+        if isinstance(sql, Path) or (isinstance(sql, str) and sql.endswith(".sql")):
+            try:
+                sql = Path(sql).read_text()
+            except Exception as e:
+                return None, f"Error reading SQL file: {e}"
+        self.last_sql = sql
+        if not skip_validation:
+            is_valid, message = self.validate(sql)
+            if not is_valid:
+                return None, f"Validation failed: {message}"
+
+        # Execute the SQL if valid or validation is skipped
+        try:
+            result = self.query(sql, force_dataframe=force_dataframe)
+            self.refresh_table_names()
+            return result, None  # No error
+        except Exception as e:
+            return None, f"Error executing query: {e}"
+
+    # Alias for _total_query
+    q = _total_query
+
+    def qdf(self, sql):
+        return self._total_query(sql, force_dataframe=True)
+
     def load_tables_to_df(self):
         """
         Load all tables in the database into a dictionary of pandas DataFrames.
@@ -190,7 +250,7 @@ class DuckDBEngine:
 
     def get_table_info(self, table_name: str) -> TableInfo:
         # Execute PRAGMA show_tables_expanded and convert to DataFrame
-        result_df = self.query("PRAGMA show_tables_expanded;")
+        result_df = self.q("PRAGMA show_tables_expanded;")
 
         # Filter the DataFrame for the specific table
         table_info_df = result_df[result_df["name"] == table_name].iloc[0]

@@ -1,0 +1,15 @@
+[notebook]
+name = "week1.ipynb"
+
+[sql]
+create_sql = "sql/week1.sql"
+disallowed_keywords = ["ALTER", "CALL", "DELETE", "DROP", "EXEC", "GRANT", "INSERT", "UPDATE"]
+
+[sql.menu]
+description = "Menu table description"
+
+[sql.members]
+description = "Members table description"
+
+[sql.sales]
+description = "Sales table description"
