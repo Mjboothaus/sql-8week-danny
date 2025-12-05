@@ -148,22 +148,28 @@ class DuckDBEngine:
         """
         logger.info(f"SQL: {sql} - DataFrame {force_dataframe}")
         try:
-            result = self.connection.execute(sql)
+            result = self.connection.execute(sql).df()
             # Fetch the result to inspect its shape
-            fetched_result = result.fetchall()
+            # fetched_result = result.fetchall()
+
+            logger.info(f"Query result: Type - {type(result)}, Len: {len(result)}")
+
+            if len(result) == 1:
+                return result.iloc[0, 0]
+            else:
+                return result
 
             # Determine if the result is a single value
-            is_single_value = len(fetched_result) == 1 and len(fetched_result[0]) == 1
+            # is_single_value = len(fetched_result) == 1 and len(fetched_result[0]) == 1
 
-            if force_dataframe or not is_single_value:
-                # Re-execute the query for DataFrame to ensure full result set is returned
-                result = self.connection.execute(sql)
-                return result.df()
-            elif is_single_value:
-                # Return the single value directly
-                return fetched_result[0][0]
-            else:
-                return None
+            # if force_dataframe or not is_single_value:
+            #     # Re-execute the query for DataFrame to ensure full result set is returned
+            #     result = self.connection.execute(sql)
+            #     return result.df()
+            # if not is_single_value:
+            #     # Return the single value directly
+            # else:
+            #     return None
         except Exception as e:
             print(f"Error executing query: {e}")
             return None

@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  db:
+    image: dannyma/psql-docker:latest
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    shm_size: 1gb
